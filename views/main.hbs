@@ -1,0 +1,118 @@
+{{> feedButtons}}
+
+<div class="container text-center">
+     <div class="alert alert-secondary" id="loadingFeedId" style="display: none;">Loading...</div>
+  
+  <div class="alert alert-danger" id="errorFeedId" style="display: none;">
+    <h5>Unable to load feed</h5>
+    Feed could not be converted, probably not a valid RSS feed.<br>
+    <small><a href="#">Open feed in a new tab</a></small>
+  </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3" id="rssFeedContentId">
+
+    </div>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center" id="pageniationBarId">
+                
+            </ul>
+        </nav>
+</div>
+</div>
+
+<script>
+    var rssFeedConverterBaseUrl = "https://api.rss2json.com/v1/api.json?rss_url=";
+    var data = "";
+    var feedPerPage = 5;
+    var totalPage = 0;
+    var currPage = 0;
+    var lastPage = 0;
+    const containDiv = document.querySelector('#rssFeedContentId');
+    async function clickMe(e) {
+        //debugger;
+        document.querySelector('#loadingFeedId').style.display = 'block';
+        const dataUrl = e.target.dataset.url;
+        const finalUrl = `${rssFeedConverterBaseUrl}${dataUrl}`
+        console.log('clicked', finalUrl)
+        const res = await fetch(finalUrl);
+        data = await res.json();
+        console.log(data);
+        
+        
+        if(data.status === 'ok'){
+            document.querySelector('#loadingFeedId').style.display = 'none';
+            document.querySelector('#errorFeedId').style.display = 'none';
+            totalPage = Math.ceil(data.items.length/feedPerPage) ;
+        }else if (data.status === 'error'){
+            document.querySelector('#loadingFeedId').style.display = 'none';
+            document.querySelector('#errorFeedId').style.display = 'block';
+            document.querySelector('#errorFeedId').style.marginTop = '2rem';
+            containDiv.innerHTML = "";
+            return;
+        }
+
+        if(totalPage > 1){
+            currPage = 1;
+            paginationFun();
+        }
+        showFeed(1)
+    }
+
+    function showFeed(pageNo){
+        var elementToInsert = ""
+         for (let i = pageNo - 1 ; i < feedPerPage*pageNo; i++) {
+             elementToInsert+= `
+                <div class="col">
+                <div class="card shadow-sm">
+                <div class="card-body">
+                <h5>${data.items[i].title}</h5>
+                <p class="card-text"><small>${data.items[i].description} &#8230;</small></p>
+                <p><a href="${data.items[i].link}">Read more &rarr;</a></p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Dec 10, 2021</small>
+                </div>
+                </div>
+            </div>
+            </div>`;
+        }
+        containDiv.innerHTML = elementToInsert;
+    }
+
+    function paginationFun(){
+        console.log('pagination will happen')
+
+        const paginationHtml = '';
+        let page = document.querySelector('#pageniationBarId');
+        
+        let pagesHtml = ""
+        // <li>About</li>
+        for(let i = 0; i < totalPage; i++){
+            pagesHtml+=`<li class="page-item" id="page_${i+1}" onclick="pageClick(event)"><a class="page-link" href="#">${i+1}</a></li>`
+        }
+        page.innerHTML=`<li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                </li>
+                ${pagesHtml}
+                <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+                </li>`;
+
+        document.querySelector('#page_1').className += " active";
+
+    }
+
+    function pageClick(e){
+        console.log('page got clicked',e);
+        const pageClickedNo = e.target.innerHTML;
+        if(currPage === pageClickedNo){
+            return;
+        }
+
+        const pageEle = document.querySelector('#pageniationBarId');
+        const lastPageEle = pageEle.children[currPage];
+        currPage = Number(e.target.innerHTML);
+        lastPageEle.className = "page-item";
+        e.currentTarget.className +=" active";
+        showFeed(currPage);
+    }
+
+</script>
