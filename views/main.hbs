@@ -27,38 +27,51 @@
     var currPage = 0;
     var lastPage = 0;
     const containDiv = document.querySelector('#rssFeedContentId');
+
+    /**
+    * @description: This Method load the Rss Feed;
+    */
     async function clickMe(e) {
-        //debugger;
         document.querySelector('#loadingFeedId').style.display = 'block';
         const dataUrl = e.target.dataset.url;
         const finalUrl = `${rssFeedConverterBaseUrl}${dataUrl}`
         console.log('clicked', finalUrl)
+        containDiv.innerHTML = "";
+        document.querySelector('#pageniationBarId').style.display = 'none';
         const res = await fetch(finalUrl);
         data = await res.json();
         console.log(data);
         
-        
+        // If data is available then load the data the feed. Else show Error
         if(data.status === 'ok'){
             document.querySelector('#loadingFeedId').style.display = 'none';
             document.querySelector('#errorFeedId').style.display = 'none';
             totalPage = Math.ceil(data.items.length/feedPerPage) ;
+            document.querySelector('#pageniationBarId').style.display = 'inline-block'
         }else if (data.status === 'error'){
             document.querySelector('#loadingFeedId').style.display = 'none';
             document.querySelector('#errorFeedId').style.display = 'block';
             document.querySelector('#errorFeedId').style.marginTop = '2rem';
             containDiv.innerHTML = "";
+            document.querySelector('#pageniationBarId').style.display = 'none';
             return;
         }
 
+        // Pagination 
         if(totalPage > 1){
             currPage = 1;
             paginationFun();
         }
+
+        // Render all feed
         showFeed(1)
     }
-
+        
+    /**
+    *@Description: This Method render all feed according to data avaliable
+    */
     function showFeed(pageNo){
-        var elementToInsert = ""
+        var elementToInsert = "";
          for (let i = pageNo - 1 ; i < feedPerPage*pageNo; i++) {
              elementToInsert+= `
                 <div class="col">
@@ -77,6 +90,9 @@
         containDiv.innerHTML = elementToInsert;
     }
 
+    /**
+    *@Description: This Method create the pagination bar according to page per feed and total feed
+    */
     function paginationFun(){
         console.log('pagination will happen')
 
@@ -84,31 +100,34 @@
         let page = document.querySelector('#pageniationBarId');
         
         let pagesHtml = ""
-        // <li>About</li>
+
+        if(totalPage === 1){
+            document.querySelector('#pageniationBarId').style.display = 'none';
+            return;
+        }
+
+
         for(let i = 0; i < totalPage; i++){
             pagesHtml+=`<li class="page-item" id="page_${i+1}" onclick="pageClick(event)"><a class="page-link" href="#">${i+1}</a></li>`
         }
-        page.innerHTML=`<li class="page-item disabled">
-                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                </li>
-                ${pagesHtml}
-                <li class="page-item">
-                <a class="page-link" href="#">Next</a>
-                </li>`;
+        page.innerHTML=`
+                ${pagesHtml}`;
 
         document.querySelector('#page_1').className += " active";
 
     }
 
+    /**
+    *@Description: This method gives all data click on page
+    */
     function pageClick(e){
-        console.log('page got clicked',e);
         const pageClickedNo = e.target.innerHTML;
         if(currPage === pageClickedNo){
             return;
         }
 
         const pageEle = document.querySelector('#pageniationBarId');
-        const lastPageEle = pageEle.children[currPage];
+        const lastPageEle = pageEle.children[currPage-1];
         currPage = Number(e.target.innerHTML);
         lastPageEle.className = "page-item";
         e.currentTarget.className +=" active";
@@ -116,3 +135,9 @@
     }
 
 </script>
+
+<style>
+    #rssFeedContentId{
+        margin-top: 2rem;
+    }
+</style>
